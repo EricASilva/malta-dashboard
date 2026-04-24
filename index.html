@@ -3,404 +3,419 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0a0f1a">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Malta 2027 Dashboard</title>
-
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;600&family=DM+Mono&family=Playfair+Display:wght@500&display=swap" rel="stylesheet">
-
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Malta 2027">
+<meta name="theme-color" content="#0a0f1a">
+<title>Malta 2027 · Plano de Intercâmbio</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#080d18;
-  --surface:#0f1923;
-  --surface2:#121e2b;
-  --border:rgba(255,255,255,0.06);
-
-  --accent:#c8a96e;
-  --blue:#4f9cf9;
-  --teal:#5eead4;
-
-  --text:#e8edf5;
-  --muted:#6a7d94;
+  --bg:#080d18;--surface:#0f1923;--surface2:#162030;--border:#1c2d45;
+  --accent:#c8a96e;--blue:#4f9cf9;--teal:#5eead4;--text:#e8edf5;
+  --muted:#6a7d94;--danger:#f87171;--warn:#f59e0b;
 }
-
-/* RESET */
 *{box-sizing:border-box;margin:0;padding:0}
-
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:'DM Sans',sans-serif;
-  min-height:100vh;
-}
-
-/* GRID BACKGROUND */
-body::before{
-  content:'';
-  position:fixed;
-  inset:0;
-  background-image:
-    linear-gradient(rgba(79,156,249,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(79,156,249,0.02) 1px, transparent 1px);
-  background-size:40px 40px;
-}
-
-/* WRAPPER */
-.wrapper{
-  max-width:980px;
-  margin:auto;
-  padding:28px 18px 80px;
-}
-
-/* HEADER */
-header{
-  margin-bottom:28px;
-}
-
-.eyebrow{
-  font-family:'DM Mono';
-  font-size:10px;
-  letter-spacing:.2em;
-  color:var(--accent);
-  margin-bottom:6px;
-}
-
-h1{
-  font-family:'Playfair Display';
-  font-size:40px;
-  font-weight:900;
-}
-
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(79,156,249,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(79,156,249,.025) 1px,transparent 1px);
+  background-size:40px 40px}
+.wrapper{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:28px 18px 64px}
+header{padding-bottom:22px;border-bottom:1px solid var(--border);margin-bottom:24px}
+.eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+h1{font-family:'Playfair Display',serif;font-size:clamp(26px,5vw,42px);font-weight:900;line-height:1.1}
 h1 span{color:var(--accent)}
+.header-meta{font-size:12px;color:var(--muted);margin-top:5px}
 
-.header-meta{
-  font-size:12px;
-  color:var(--muted);
-  margin-top:6px;
-}
+/* TICKER */
+.ticker{display:flex;align-items:center;gap:14px;margin-bottom:22px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;flex-wrap:wrap}
+.ticker-main{display:flex;flex-direction:column;gap:3px}
+.ticker-rate{font-family:'DM Mono',monospace;font-size:24px;font-weight:500;color:var(--teal)}
+.ticker-sub{font-size:11px;color:var(--muted)}
+.ticker-badge{font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border-radius:99px;background:rgba(94,234,212,.1);border:1px solid rgba(94,234,212,.25);color:var(--teal)}
+.ticker-status{font-size:11px;color:var(--muted);margin-left:auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin 1s linear infinite}
+
+/* GRIDS */
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.g1{margin-bottom:14px}
+@media(max-width:620px){.g3,.g2{grid-template-columns:1fr}}
 
 /* CARDS */
-.card,.tcard,.bcard,.scard,.inp-card,.prog{
-  background:rgba(15,25,35,0.7);
-  backdrop-filter: blur(12px);
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:18px;
-  transition:.25s;
-}
-
-.card:hover{
-  border-color:rgba(255,255,255,0.12);
-  transform:translateY(-2px);
-}
-
-/* KPI */
-.lbl{
-  font-family:'DM Mono';
-  font-size:10px;
-  color:var(--muted);
-  margin-bottom:6px;
-}
-
-.val{
-  font-family:'Playfair Display';
-  font-size:30px;
-}
-
-.val-brl{
-  font-size:12px;
-  color:var(--muted);
-}
-
-/* GRID */
-.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-
-@media(max-width:620px){
-  .g3,.g2{grid-template-columns:1fr}
-}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.card:hover{border-color:#263d5e}
+.lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.val{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;line-height:1}
+.val.gold{color:var(--accent)}.val.teal{color:var(--teal)}.val.blue{color:var(--blue)}
+.val-brl{font-size:12px;color:var(--muted);margin-top:4px;font-family:'DM Mono',monospace}
+.card-sub{font-size:11px;color:var(--muted);margin-top:5px}
 
 /* PROGRESS */
-.prog-fill{
-  background:linear-gradient(90deg,var(--blue),var(--teal));
-  height:100%;
-  border-radius:99px;
-  position:relative;
-}
-
-.prog-bg{
-  height:10px;
-  background:var(--surface2);
-  border-radius:99px;
-  overflow:hidden;
-}
-
-.prog-fill::after{
-  content:'';
-  position:absolute;
-  right:0;
-  top:50%;
-  transform:translateY(-50%);
-  width:10px;
-  height:10px;
-  background:white;
-  border-radius:50%;
-  box-shadow:0 0 10px var(--teal);
-}
+.prog{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:14px}
+.prog-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
+.prog-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700}
+.prog-pct{font-family:'DM Mono',monospace;font-size:26px;color:var(--accent)}
+.prog-bg{background:var(--surface2);border-radius:99px;height:10px;overflow:hidden;position:relative}
+.prog-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--teal));transition:width .8s cubic-bezier(.4,0,.2,1);position:relative}
+.prog-fill::after{content:'';position:absolute;right:-1px;top:50%;transform:translateY(-50%);width:14px;height:14px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal)}
+.prog-meta{display:flex;justify-content:space-between;margin-top:10px;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
+.prog-brl{text-align:center;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:6px}
 
 /* INPUT */
-input,select{
-  background:var(--surface2);
-  border:1px solid var(--border);
-  border-radius:8px;
-  color:var(--text);
-  padding:10px;
-}
+.inp-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:14px}
+.inp-card h2{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;margin-bottom:14px}
+.ctabs{display:flex;gap:6px;margin-bottom:12px}
+.ctab{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;padding:5px 14px;transition:all .2s}
+.ctab.active{background:rgba(79,156,249,.15);border-color:var(--blue);color:var(--blue)}
+.ctab:hover{border-color:#3a5070}
+.inp-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.inp-row select,.inp-row input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:9px 12px;outline:none;transition:border-color .2s;flex:1;min-width:120px}
+.inp-row select:focus,.inp-row input:focus{border-color:var(--blue)}
+.inp-sym{font-family:'DM Mono',monospace;font-size:16px;color:var(--accent);min-width:20px}
+.btn{background:linear-gradient(135deg,var(--blue),#2d6fc4);border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:9px 18px;transition:opacity .2s,transform .1s;white-space:nowrap}
+.btn:hover{opacity:.85}.btn:active{transform:scale(.97)}
+.preview{font-size:12px;color:var(--muted);margin-top:8px;font-family:'DM Mono',monospace;min-height:18px}
+.alert{border-radius:8px;padding:10px 14px;font-size:12px;margin-top:10px;display:none}
+.alert.show{display:block}
+.alert-ok{background:rgba(94,234,212,.08);border:1px solid rgba(94,234,212,.2);color:var(--teal)}
+.alert-warn{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:var(--warn)}
 
-button{
-  background:linear-gradient(135deg,var(--blue),#2d6fc4);
-  border:none;
-  border-radius:8px;
-  color:white;
-  padding:10px 16px;
-  cursor:pointer;
-}
+/* TABLE */
+.tcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px}
+.tcard h2{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;margin-bottom:14px}
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 0;font-style:italic}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:0 0 8px;border-bottom:1px solid var(--border)}
+td{padding:9px 0;border-bottom:1px solid rgba(30,45,69,.5);font-size:12px;vertical-align:top}
+tr:last-child td{border-bottom:none}
+.t-eur{color:var(--teal);font-family:'DM Mono',monospace;font-weight:500}
+.t-brl{color:var(--muted);font-family:'DM Mono',monospace;font-size:10px}
+.t-pos{color:var(--teal);font-family:'DM Mono',monospace;font-size:10px}
+.t-neg{color:var(--danger);font-family:'DM Mono',monospace;font-size:10px}
+.t-acc{color:var(--muted);font-family:'DM Mono',monospace;font-size:11px}
+.t-acc2{color:rgba(106,125,148,.6);font-family:'DM Mono',monospace;font-size:10px}
+.btn-rm{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--danger);font-size:10px;padding:3px 8px;border-radius:5px;cursor:pointer;font-family:'DM Mono',monospace}
 
 /* CHART */
-.bar{
-  border-radius:6px 6px 0 0;
-}
+.chart-area{height:140px;display:flex;align-items:flex-end;gap:5px;padding-top:20px;position:relative;margin-top:8px}
+.chart-area::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(transparent,transparent calc(33% - 1px),var(--border) calc(33% - 1px),var(--border) 33%);pointer-events:none}
+.bw{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bar{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height .5s cubic-bezier(.4,0,.2,1)}
+.bar.above{background:linear-gradient(180deg,var(--teal),#0d9488)}
+.bar.below{background:linear-gradient(180deg,var(--blue),#2563a8)}
+.bar.empty{background:var(--surface2);opacity:.5}
+.blbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center}
+.gline{position:absolute;left:0;right:0;border-top:1px dashed var(--accent);pointer-events:none}
+.gtag{position:absolute;right:0;background:var(--accent);color:var(--bg);font-family:'DM Mono',monospace;font-size:9px;padding:1px 5px;border-radius:3px;transform:translateY(-50%);white-space:nowrap}
+
+/* BUDGET */
+.bcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:14px}
+.bcard h2{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;margin-bottom:14px}
+.brow{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid rgba(30,45,69,.5);gap:10px;font-size:12px}
+.brow:last-child{border-bottom:none;font-weight:600}
+.blabel{flex:1.4}
+.bbar-wrap{flex:1}
+.bbar{height:4px;border-radius:2px;background:var(--blue);opacity:.4}
+.beur{font-family:'DM Mono',monospace;color:var(--muted);min-width:56px;text-align:right;font-size:12px}
+.bbrl{font-family:'DM Mono',monospace;color:rgba(106,125,148,.6);min-width:72px;text-align:right;font-size:11px}
+.brow:last-child .beur{color:var(--accent);font-family:'Playfair Display',serif;font-size:17px}
+.brow:last-child .bbrl{color:rgba(200,169,110,.65);font-size:13px}
 
 /* STEPS */
-.step{
-  transition:.2s;
-}
-.step:hover{
-  transform:translateX(4px);
-}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:14px}
+.scard h2{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;margin-bottom:14px}
+.step{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(30,45,69,.5);cursor:pointer}
+.step:last-child{border-bottom:none}
+.sdot{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:2px}
+.step.done .sdot{background:var(--teal);border-color:var(--teal)}
+.step.done .sdot::after{content:'✓';font-size:11px;color:var(--bg);font-weight:700}
+.step.done .stxt{opacity:.4;text-decoration:line-through}
+.sdate{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:.08em;margin-bottom:2px}
+.stxt{font-size:13px;line-height:1.4}
+.snote{font-size:11px;color:var(--muted);margin-top:2px}
 
-/* ANIMATION */
-@keyframes fadeUp{
-  from{opacity:0;transform:translateY(10px)}
-  to{opacity:1;transform:translateY(0)}
-}
-
-.card,.prog,.inp-card,.tcard,.bcard,.scard{
-  animation:fadeUp .4s ease;
-}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.card,.prog,.inp-card,.tcard,.bcard,.scard{animation:up .4s ease both}
 </style>
 </head>
-
 <body>
+<div class="wrapper">
 
-<div class="container">
+<header>
+  <div class="eyebrow">🇲🇹 Intercâmbio · Plano financeiro</div>
+  <h1>Malta <span>2027</span></h1>
+  <p class="header-meta">Abril 2027 · IELS Malta · Inglês Geral · Quarto privado · 20 aulas/semana</p>
+</header>
 
-<h1>Malta 2027 🇲🇹</h1>
-
-<div class="card kpis">
-<div class="kpi">
-<div>Meta</div>
-<div class="num" id="meta"></div>
-</div>
-<div class="kpi">
-<div>Poupado</div>
-<div class="num" id="saved"></div>
-</div>
-<div class="kpi">
-<div>Falta</div>
-<div class="num" id="remaining"></div>
-</div>
-</div>
-
-<div class="card">
-<div class="progress"><div class="progress-bar" id="bar"></div></div>
-<div id="msg"></div>
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-main">
+    <div class="lbl">Cotação ao vivo · EUR/BRL</div>
+    <div class="ticker-rate" id="t-rate">…</div>
+    <div class="ticker-sub">1 Euro em Reais brasileiros</div>
+  </div>
+  <span class="ticker-badge" id="t-badge" style="display:none">LIVE</span>
+  <span class="ticker-status" id="t-status"><span class="spin">⟳</span> A buscar cotação…</span>
 </div>
 
-<div class="card">
-<select id="currency">
-<option value="EUR">€ Euro</option>
-<option value="BRL">R$ Real</option>
-</select>
-<input id="amount" placeholder="Valor">
-<button onclick="add()">Adicionar</button>
+<!-- KPIS -->
+<div class="g3">
+  <div class="card">
+    <div class="lbl">Meta total</div>
+    <div class="val gold">€3.300</div>
+    <div class="val-brl" id="k-goal-brl">R$ …</div>
+    <div class="card-sub">Com margem de segurança</div>
+  </div>
+  <div class="card">
+    <div class="lbl">Poupado até agora</div>
+    <div class="val teal" id="k-saved-eur">€0</div>
+    <div class="val-brl" id="k-saved-brl">R$ 0</div>
+    <div class="card-sub" id="k-saved-sub">0 de 12 meses</div>
+  </div>
+  <div class="card">
+    <div class="lbl">Falta poupar</div>
+    <div class="val blue" id="k-rem-eur">€3.300</div>
+    <div class="val-brl" id="k-rem-brl">R$ …</div>
+    <div class="card-sub" id="k-rem-sub">~€300/mês recomendado</div>
+  </div>
 </div>
 
-<div class="card">
-<table id="table"></table>
+<!-- PROGRESS -->
+<div class="prog">
+  <div class="prog-header">
+    <div>
+      <div class="lbl">Progresso da meta</div>
+      <div class="prog-title" id="p-label">Começar a poupar 🚀</div>
+    </div>
+    <div class="prog-pct" id="p-pct">0%</div>
+  </div>
+  <div class="prog-bg"><div class="prog-fill" id="p-fill" style="width:0%"></div></div>
+  <div class="prog-meta">
+    <span id="p-left">€0 poupado</span>
+    <span>€3.300 meta · Abril 2027</span>
+  </div>
+  <div class="prog-brl" id="p-brl"></div>
 </div>
 
-<div class="card">
-<canvas id="chart"></canvas>
+<!-- INPUT -->
+<div class="inp-card">
+  <h2>Registar poupança mensal</h2>
+  <div class="ctabs">
+    <button class="ctab active" id="tab-eur" onclick="setCur('EUR')">€ Euro</button>
+    <button class="ctab" id="tab-brl" onclick="setCur('BRL')">R$ Real</button>
+  </div>
+  <div class="inp-row">
+    <select id="sel-m">
+      <option value="">Selecionar mês…</option>
+      <option>Abr 2026</option><option>Mai 2026</option><option>Jun 2026</option>
+      <option>Jul 2026</option><option>Ago 2026</option><option>Set 2026</option>
+      <option>Out 2026</option><option>Nov 2026</option><option>Dez 2026</option>
+      <option>Jan 2027</option><option>Fev 2027</option><option>Mar 2027</option>
+    </select>
+    <input type="number" id="inp-v" placeholder="Valor em €" min="0" step="10">
+    <span class="inp-sym" id="inp-sym">€</span>
+    <button class="btn" onclick="addEntry()">+ Registar</button>
+  </div>
+  <div class="preview" id="preview"></div>
+  <div class="alert alert-ok"   id="a-ok"></div>
+  <div class="alert alert-warn" id="a-warn"></div>
 </div>
 
-<div class="card checklist" id="steps"></div>
-
-<div class="card" id="budget"></div>
-
+<!-- CHART + LOG -->
+<div class="g2">
+  <div class="tcard">
+    <h2>Evolução mensal</h2>
+    <div class="chart-area" id="chart"></div>
+  </div>
+  <div class="tcard">
+    <h2>Histórico</h2>
+    <div class="empty" id="log-empty">Nenhum registo.<br>Adiciona o primeiro mês! 💰</div>
+    <table id="log-tbl" style="display:none">
+      <thead><tr><th>Mês</th><th>€</th><th>R$</th><th>Vs €300</th><th>Acum.</th><th></th></tr></thead>
+      <tbody id="log-body"></tbody>
+    </table>
+  </div>
 </div>
+
+<!-- BUDGET -->
+<div class="bcard">
+  <h2>Orçamento detalhado</h2>
+  <div class="brow"><span class="blabel">✈️ Passagem Lisboa–Malta</span><div class="bbar-wrap"><div class="bbar" style="width:46%"></div></div><span class="beur">€150</span><span class="bbrl" id="bb1">R$…</span></div>
+  <div class="brow"><span class="blabel">🏫 IELS: curso + quarto + transfer</span><div class="bbar-wrap"><div class="bbar" style="width:100%"></div></div><span class="beur">€2.115</span><span class="bbrl" id="bb2">R$…</span></div>
+  <div class="brow"><span class="blabel">⏰ Morning guarantee (4 sem.)</span><div class="bbar-wrap"><div class="bbar" style="width:7%"></div></div><span class="beur">€80</span><span class="bbrl" id="bb3">R$…</span></div>
+  <div class="brow"><span class="blabel">🍽️ Alimentação, transporte, lazer</span><div class="bbar-wrap"><div class="bbar" style="width:73%"></div></div><span class="beur">€800</span><span class="bbrl" id="bb4">R$…</span></div>
+  <div class="brow"><span class="blabel">🌿 Eco tax + margem de segurança</span><div class="bbar-wrap"><div class="bbar" style="width:18%"></div></div><span class="beur">€155</span><span class="bbrl" id="bb5">R$…</span></div>
+  <div class="brow"><span class="blabel">💰 Total recomendado</span><div class="bbar-wrap"></div><span class="beur">€3.300</span><span class="bbrl" id="bb6">R$…</span></div>
+</div>
+
+<!-- STEPS -->
+<div class="scard">
+  <h2>Próximos passos</h2>
+  <div class="step" id="s0" onclick="toggleStep(0)"><div class="sdot"></div><div><div class="sdate">Agora · Abr 2026</div><div class="stxt">Começar a poupar €300/mês</div><div class="snote">Meta: €300 × 12 = €3.600 — supera o orçamento com folga</div></div></div>
+  <div class="step" id="s1" onclick="toggleStep(1)"><div class="sdot"></div><div><div class="sdate">Set–Out 2026</div><div class="stxt">Verificar lista de preços IELS 2027</div><div class="snote">Aceder a maltaeng.com e confirmar valores atualizados</div></div></div>
+  <div class="step" id="s2" onclick="toggleStep(2)"><div class="sdot"></div><div><div class="sdate">Out–Nov 2026</div><div class="stxt">Reservar escola IELS (sem pré-pagamento)</div><div class="snote">Inglês Geral 20 aulas + quarto individual + morning guarantee</div></div></div>
+  <div class="step" id="s3" onclick="toggleStep(3)"><div class="sdot"></div><div><div class="sdate">Nov–Dez 2026</div><div class="stxt">Comprar passagem aérea Lisboa–Malta</div><div class="snote">Ryanair · reservar com 4–5 meses de antecedência</div></div></div>
+  <div class="step" id="s4" onclick="toggleStep(4)"><div class="sdot"></div><div><div class="sdate">Jan 2027</div><div class="stxt">Confirmar Cartão Europeu de Seguro de Doença</div><div class="snote">Verificar cobertura SNS em Malta ou contratar seguro viagem</div></div></div>
+  <div class="step" id="s5" onclick="toggleStep(5)"><div class="sdot"></div><div><div class="sdate">Fev–Mar 2027</div><div class="stxt">Preparar setup de trabalho remoto</div><div class="snote">Malta = UTC+2 em abril (+1h vs Portugal) · testar VPN se necessário</div></div></div>
+  <div class="step" id="s6" onclick="toggleStep(6)"><div class="sdot"></div><div><div class="sdate">Abr 2027 🎉</div><div class="stxt">Partir para Malta!</div><div class="snote">Aulas 9h–12h30 · Trabalho remoto 14h+ · Mediterrâneo à noite 🌊</div></div></div>
+</div>
+
+</div><!-- /wrapper -->
 
 <script>
-const META=3300;
-const MONTHS=[
-"Abr 26","Mai 26","Jun 26","Jul 26","Ago 26","Set 26",
-"Out 26","Nov 26","Dez 26","Jan 27","Fev 27","Mar 27"
-];
+const GOAL=3300,TARGET=300;
+const MONTHS=['Abr 2026','Mai 2026','Jun 2026','Jul 2026','Ago 2026','Set 2026','Out 2026','Nov 2026','Dez 2026','Jan 2027','Fev 2027','Mar 2027'];
+const BVALS=[150,2115,80,800,155,3300];
 
-let data=JSON.parse(localStorage.getItem("malta_v3")||"{}");
-let steps=JSON.parse(localStorage.getItem("malta_steps")||"{}");
-let rate=5.86;
+let rate=5.86,entries={},steps=new Array(7).fill(false),cur='EUR';
 
-async function getRate(){
-let cache=localStorage.getItem("rate_cache");
-if(cache){
-let obj=JSON.parse(cache);
-if(Date.now()-obj.time<1800000){rate=obj.value;return;}
-}
-try{
-let r=await fetch("https://open.er-api.com/v6/latest/EUR");
-let j=await r.json();
-rate=j.rates.BRL;
-localStorage.setItem("rate_cache",JSON.stringify({value:rate,time:Date.now()}));
-}catch{}
+try{ const e=localStorage.getItem('malta_v3'); if(e)entries=JSON.parse(e); }catch(e){}
+try{ const s=localStorage.getItem('malta_steps'); if(s)steps=JSON.parse(s); }catch(e){}
+
+function save(){
+  try{localStorage.setItem('malta_v3',JSON.stringify(entries));}catch(e){}
+  try{localStorage.setItem('malta_steps',JSON.stringify(steps));}catch(e){}
 }
 
-function format(v){return "€"+v.toFixed(0)+" / R$"+(v*rate).toFixed(0)}
-
-function render(){
-let saved=Object.values(data).reduce((a,b)=>a+b,0);
-let rem=META-saved;
-
-meta.innerText=format(META);
-savedEl.innerText=format(saved);
-remaining.innerText=format(rem);
-
-let p=(saved/META)*100;
-bar.style.width=p+"%";
-
-msg.innerText=p>=100?"🎉 Pronto!":"Continua! "+p.toFixed(0)+"%";
-
-renderTable();
-renderChart();
-renderBudget();
-renderSteps();
+/* ── RATE FETCH ── */
+async function fetchRate(){
+  const ck='malta_rate',ct='malta_rate_ts';
+  try{
+    const cv=localStorage.getItem(ck),ts=parseInt(localStorage.getItem(ct)||'0');
+    if(cv&&Date.now()-ts<1800000){rate=parseFloat(cv);setRate(true,false);return;}
+  }catch(e){}
+  try{
+    const r=await fetch('https://open.er-api.com/v6/latest/EUR');
+    const d=await r.json();
+    if(d.rates&&d.rates.BRL){
+      rate=d.rates.BRL;
+      try{localStorage.setItem(ck,rate);localStorage.setItem(ct,Date.now());}catch(e){}
+      setRate(false,false);return;
+    }
+  }catch(e){}
+  try{const cv=localStorage.getItem(ck);if(cv){rate=parseFloat(cv);setRate(true,true);return;}}catch(e){}
+  setRate(true,true);
 }
 
-function add(){
-let val=parseFloat(amount.value);
-if(!val)return;
-if(currency.value==="BRL") val/=rate;
-
-let m=MONTHS[new Date().getMonth()-3];
-data[m]=(data[m]||0)+val;
-
-localStorage.setItem("malta_v3",JSON.stringify(data));
-render();
-amount.value="";
+function setRate(cached,fallback){
+  document.getElementById('t-rate').textContent='R$ '+rate.toFixed(4);
+  const badge=document.getElementById('t-badge'),status=document.getElementById('t-status');
+  if(fallback){status.textContent='⚠️ Sem conexão — usando última cotação conhecida';badge.style.display='none';}
+  else if(cached){status.textContent='✓ Cache < 30 min';badge.style.display='inline';}
+  else{status.textContent='✓ Atualizado às '+new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});badge.style.display='inline';}
+  renderAll();
 }
 
-function renderTable(){
-table.innerHTML="<tr><th>Mês</th><th>€</th><th>R$</th><th>Δ</th></tr>";
-let acc=0;
+/* ── FORMAT ── */
+const fE=n=>'€'+Math.round(n).toLocaleString('pt-PT');
+const fB=n=>'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 
-MONTHS.forEach(m=>{
-let v=data[m]||0;
-acc+=v;
-let diff=v-300;
+/* ── CURRENCY TOGGLE ── */
+function setCur(c){
+  cur=c;
+  document.getElementById('tab-eur').classList.toggle('active',c==='EUR');
+  document.getElementById('tab-brl').classList.toggle('active',c==='BRL');
+  document.getElementById('inp-sym').textContent=c==='EUR'?'€':'R$';
+  document.getElementById('inp-v').placeholder='Valor em '+(c==='EUR'?'€':'R$');
+  updatePreview();
+}
+function updatePreview(){
+  const v=parseFloat(document.getElementById('inp-v').value);
+  const p=document.getElementById('preview');
+  if(!v||v<=0){p.textContent='';return;}
+  if(cur==='EUR') p.textContent=`≈ ${fB(v*rate)} (1€ = R$ ${rate.toFixed(4)})`;
+  else p.textContent=`≈ ${fE(v/rate)} (1€ = R$ ${rate.toFixed(4)})`;
+}
+document.addEventListener('DOMContentLoaded',()=>document.getElementById('inp-v').addEventListener('input',updatePreview));
 
-table.innerHTML+=`<tr>
-<td>${m}</td>
-<td>${v.toFixed(0)}</td>
-<td>${(v*rate).toFixed(0)}</td>
-<td>${diff}</td>
-</tr>`;
-});
+/* ── ADD ENTRY ── */
+function addEntry(){
+  const m=document.getElementById('sel-m').value;
+  const v=parseFloat(document.getElementById('inp-v').value);
+  if(!m){showAlert('warn','Seleciona um mês primeiro.');return;}
+  if(!v||v<=0){showAlert('warn','Insere um valor válido.');return;}
+  const eurVal=cur==='EUR'?v:v/rate;
+  entries[m]={eur:eurVal,rateAt:rate};
+  save();renderAll();
+  const d=eurVal-TARGET;
+  if(d>=0) showAlert('ok',`✓ ${m}: ${fE(eurVal)} (${fB(eurVal*rate)}) registado! ${d>0?'+'+fE(d)+' acima da meta 🎉':'Na meta!'}`);
+  else showAlert('warn',`${m}: ${fE(eurVal)} registado. Faltaram ${fE(-d)} para a meta.`);
+  document.getElementById('sel-m').value='';
+  document.getElementById('inp-v').value='';
+  document.getElementById('preview').textContent='';
+}
+function removeEntry(m){delete entries[m];save();renderAll();}
+function toggleStep(i){steps[i]=!steps[i];save();renderSteps();}
+function showAlert(t,msg){
+  ['a-ok','a-warn'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  const el=document.getElementById('a-'+t);el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),4500);
+}
+
+/* ── RENDER ── */
+function renderAll(){
+  const total=Object.values(entries).reduce((a,e)=>a+(e.eur!==undefined?e.eur:e),0);
+  const rem=Math.max(0,GOAL-total),pct=Math.min(100,(total/GOAL)*100);
+  const cnt=Object.keys(entries).length,ml=Math.max(1,12-cnt);
+
+  document.getElementById('k-goal-brl').textContent=fB(GOAL*rate);
+  document.getElementById('k-saved-eur').textContent=fE(total);
+  document.getElementById('k-saved-brl').textContent=fB(total*rate);
+  document.getElementById('k-saved-sub').textContent=cnt+' de 12 meses registados';
+  document.getElementById('k-rem-eur').textContent=fE(rem);
+  document.getElementById('k-rem-brl').textContent=fB(rem*rate);
+  document.getElementById('k-rem-sub').textContent=rem>0?`~${fE(rem/ml)}/mês nos próx. ${ml} meses`:'🎉 Meta atingida!';
+
+  document.getElementById('p-fill').style.width=pct.toFixed(1)+'%';
+  document.getElementById('p-pct').textContent=Math.round(pct)+'%';
+  document.getElementById('p-label').textContent=
+    pct===0?'Começar a poupar 🚀':pct<25?'A ganhar ritmo… 💪':pct<50?'Bom progresso! 📈':pct<75?'Mais de metade! 🌟':pct<100?'Quase lá! ✈️':'Meta atingida! 🎉🇲🇹';
+  document.getElementById('p-left').textContent=fE(total)+' poupado';
+  document.getElementById('p-brl').textContent=total>0?`Equivalente a ${fB(total*rate)} ao câmbio atual`:'';
+
+  BVALS.forEach((v,i)=>{ const el=document.getElementById('bb'+(i+1)); if(el)el.textContent=fB(v*rate); });
+
+  // Log
+  const le=document.getElementById('log-empty'),lt=document.getElementById('log-tbl'),lb=document.getElementById('log-body');
+  if(cnt===0){le.style.display='block';lt.style.display='none';}
+  else{
+    le.style.display='none';lt.style.display='table';lb.innerHTML='';
+    let run=0;
+    MONTHS.forEach(m=>{
+      const raw=entries[m];if(!raw)return;
+      const ev=raw.eur!==undefined?raw.eur:raw;run+=ev;const d=ev-TARGET;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${m}</td><td class="t-eur">${fE(ev)}</td><td class="t-brl">${fB(ev*rate)}</td><td class="${d>=0?'t-pos':'t-neg'}">${d>=0?'+':''}${fE(d)}</td><td><div class="t-acc">${fE(run)}</div><div class="t-acc2">${fB(run*rate)}</div></td><td><button class="btn-rm" onclick="removeEntry('${m}')">✕</button></td>`;
+      lb.appendChild(tr);
+    });
+  }
+  renderChart();
 }
 
 function renderChart(){
-let c=chart.getContext("2d");
-c.clearRect(0,0,chart.width,chart.height);
-
-MONTHS.forEach((m,i)=>{
-let v=data[m]||0;
-let h=v/300*150;
-c.fillStyle=v>300?"#5eead4":v>0?"#4f9cf9":"#333";
-c.fillRect(i*25,180-h,15,h);
-});
+  const area=document.getElementById('chart');area.innerHTML='';
+  const vals=MONTHS.map(m=>{const raw=entries[m];return raw?(raw.eur!==undefined?raw.eur:raw):0;});
+  const maxH=Math.max(TARGET*1.4,...vals),bH=120,gp=(TARGET/maxH)*bH;
+  const gl=document.createElement('div');gl.className='gline';gl.style.bottom=gp+'px';
+  const gt=document.createElement('div');gt.className='gtag';gt.style.bottom=gp+'px';gt.textContent='€300';
+  area.appendChild(gl);area.appendChild(gt);
+  MONTHS.forEach((m,i)=>{
+    const v=vals[i],h=v>0?Math.max(4,(v/maxH)*bH):5;
+    const w=document.createElement('div');w.className='bw';
+    const b=document.createElement('div');b.className='bar '+(v===0?'empty':v>=TARGET?'above':'below');
+    b.style.height=h+'px';b.title=`${m}: ${v>0?fE(v)+' · '+fB(v*rate):'Não registado'}`;
+    const l=document.createElement('div');l.className='blbl';l.textContent=m.substring(0,3);
+    w.appendChild(b);w.appendChild(l);area.appendChild(w);
+  });
 }
 
-function renderSteps(){
-const list=[
-["Começar poupança","Abr 2026"],
-["Ver preços","Set 2026"],
-["Reservar escola","Out 2026"],
-["Comprar voo","Nov 2026"],
-["Confirmar CESD","Jan 2027"],
-["Preparar remoto","Fev 2027"],
-["Partir","Abr 2027"]
-];
+function renderSteps(){for(let i=0;i<7;i++)document.getElementById('s'+i).classList.toggle('done',steps[i]);}
 
-stepsDiv.innerHTML="";
-list.forEach((s,i)=>{
-let d=document.createElement("div");
-d.innerText=s[0]+" - "+s[1];
-if(steps[i])d.classList.add("done");
-d.onclick=()=>{
-steps[i]=!steps[i];
-localStorage.setItem("malta_steps",JSON.stringify(steps));
-render();
-};
-stepsDiv.appendChild(d);
-});
-}
-
-function renderBudget(){
-const items=[
-["Voo",150],
-["Curso+Casa",2115],
-["Morning",80],
-["Vida",800],
-["Extras",155]
-];
-
-budget.innerHTML="";
-items.forEach(i=>{
-let div=document.createElement("div");
-div.innerHTML=`${i[0]} - €${i[1]} / R$${(i[1]*rate).toFixed(0)}`;
-budget.appendChild(div);
-});
-}
-
-async function init(){
-await getRate();
-window.meta=document.getElementById("meta");
-window.savedEl=document.getElementById("saved");
-window.remaining=document.getElementById("remaining");
-window.bar=document.getElementById("bar");
-window.msg=document.getElementById("msg");
-window.table=document.getElementById("table");
-window.chart=document.getElementById("chart");
-window.stepsDiv=document.getElementById("steps");
-window.budget=document.getElementById("budget");
-
-render();
-}
-
-init();
-
-/*
-// Webhook opcional
-const WEBHOOK_URL = "https://example.com";
-
-function sendToWebhook(data){
-fetch(WEBHOOK_URL,{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify(data)
-});
-}
-*/
+renderSteps();
+fetchRate();
 </script>
-
 </body>
 </html>
