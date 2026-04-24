@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0f1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Malta 2027 Dashboard</title>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;600&family=DM+Mono&family=Playfair+Display:wght@500&display=swap" rel="stylesheet">
+
+<style>
+:root{
+--bg:#080d18;
+--card:#0f1923;
+--accent:#c8a96e;
+--blue:#4f9cf9;
+--teal:#5eead4;
+--text:#e8edf5;
+--muted:#6a7d94;
+}
+
+*{box-sizing:border-box}
+body{
+margin:0;
+font-family:'DM Sans',sans-serif;
+background:var(--bg);
+color:var(--text);
+background-image:linear-gradient(rgba(79,156,249,0.025) 1px, transparent 1px),
+linear-gradient(90deg, rgba(79,156,249,0.025) 1px, transparent 1px);
+background-size:40px 40px;
+}
+
+h1,h2{font-family:'Playfair Display'}
+
+.container{
+max-width:980px;
+margin:auto;
+padding:16px;
+display:grid;
+gap:16px;
+}
+
+.card{
+background:var(--card);
+padding:16px;
+border-radius:12px;
+border:1px solid transparent;
+transition:.2s;
+}
+.card:hover{border:1px solid rgba(255,255,255,0.1)}
+
+.kpis{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px;
+}
+
+.kpi{
+text-align:center;
+}
+
+.num{
+font-family:'DM Mono';
+font-size:20px;
+}
+
+.progress{
+height:12px;
+background:#0a1320;
+border-radius:6px;
+overflow:hidden;
+}
+
+.progress-bar{
+height:100%;
+background:linear-gradient(90deg,var(--blue),var(--teal));
+width:0%;
+transition:1s;
+position:relative;
+}
+
+.progress-bar::after{
+content:'';
+position:absolute;
+right:0;
+top:0;
+width:8px;
+height:100%;
+background:white;
+opacity:.5;
+}
+
+input,button,select{
+background:#0a1320;
+border:none;
+color:var(--text);
+padding:10px;
+border-radius:8px;
+width:100%;
+}
+
+button{
+background:var(--blue);
+cursor:pointer;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+font-size:13px;
+}
+td,th{padding:6px;text-align:left}
+
+canvas{width:100% !important;height:200px !important}
+
+.checklist div{
+padding:6px;
+cursor:pointer;
+}
+
+.done{text-decoration:line-through;color:var(--muted)}
+
+@media(max-width:620px){
+.kpis{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Malta 2027 🇲🇹</h1>
+
+<div class="card kpis">
+<div class="kpi">
+<div>Meta</div>
+<div class="num" id="meta"></div>
+</div>
+<div class="kpi">
+<div>Poupado</div>
+<div class="num" id="saved"></div>
+</div>
+<div class="kpi">
+<div>Falta</div>
+<div class="num" id="remaining"></div>
+</div>
+</div>
+
+<div class="card">
+<div class="progress"><div class="progress-bar" id="bar"></div></div>
+<div id="msg"></div>
+</div>
+
+<div class="card">
+<select id="currency">
+<option value="EUR">€ Euro</option>
+<option value="BRL">R$ Real</option>
+</select>
+<input id="amount" placeholder="Valor">
+<button onclick="add()">Adicionar</button>
+</div>
+
+<div class="card">
+<table id="table"></table>
+</div>
+
+<div class="card">
+<canvas id="chart"></canvas>
+</div>
+
+<div class="card checklist" id="steps"></div>
+
+<div class="card" id="budget"></div>
+
+</div>
+
+<script>
+const META=3300;
+const MONTHS=[
+"Abr 26","Mai 26","Jun 26","Jul 26","Ago 26","Set 26",
+"Out 26","Nov 26","Dez 26","Jan 27","Fev 27","Mar 27"
+];
+
+let data=JSON.parse(localStorage.getItem("malta_v3")||"{}");
+let steps=JSON.parse(localStorage.getItem("malta_steps")||"{}");
+let rate=5.86;
+
+async function getRate(){
+let cache=localStorage.getItem("rate_cache");
+if(cache){
+let obj=JSON.parse(cache);
+if(Date.now()-obj.time<1800000){rate=obj.value;return;}
+}
+try{
+let r=await fetch("https://open.er-api.com/v6/latest/EUR");
+let j=await r.json();
+rate=j.rates.BRL;
+localStorage.setItem("rate_cache",JSON.stringify({value:rate,time:Date.now()}));
+}catch{}
+}
+
+function format(v){return "€"+v.toFixed(0)+" / R$"+(v*rate).toFixed(0)}
+
+function render(){
+let saved=Object.values(data).reduce((a,b)=>a+b,0);
+let rem=META-saved;
+
+meta.innerText=format(META);
+savedEl.innerText=format(saved);
+remaining.innerText=format(rem);
+
+let p=(saved/META)*100;
+bar.style.width=p+"%";
+
+msg.innerText=p>=100?"🎉 Pronto!":"Continua! "+p.toFixed(0)+"%";
+
+renderTable();
+renderChart();
+renderBudget();
+renderSteps();
+}
+
+function add(){
+let val=parseFloat(amount.value);
+if(!val)return;
+if(currency.value==="BRL") val/=rate;
+
+let m=MONTHS[new Date().getMonth()-3];
+data[m]=(data[m]||0)+val;
+
+localStorage.setItem("malta_v3",JSON.stringify(data));
+render();
+amount.value="";
+}
+
+function renderTable(){
+table.innerHTML="<tr><th>Mês</th><th>€</th><th>R$</th><th>Δ</th></tr>";
+let acc=0;
+
+MONTHS.forEach(m=>{
+let v=data[m]||0;
+acc+=v;
+let diff=v-300;
+
+table.innerHTML+=`<tr>
+<td>${m}</td>
+<td>${v.toFixed(0)}</td>
+<td>${(v*rate).toFixed(0)}</td>
+<td>${diff}</td>
+</tr>`;
+});
+}
+
+function renderChart(){
+let c=chart.getContext("2d");
+c.clearRect(0,0,chart.width,chart.height);
+
+MONTHS.forEach((m,i)=>{
+let v=data[m]||0;
+let h=v/300*150;
+c.fillStyle=v>300?"#5eead4":v>0?"#4f9cf9":"#333";
+c.fillRect(i*25,180-h,15,h);
+});
+}
+
+function renderSteps(){
+const list=[
+["Começar poupança","Abr 2026"],
+["Ver preços","Set 2026"],
+["Reservar escola","Out 2026"],
+["Comprar voo","Nov 2026"],
+["Confirmar CESD","Jan 2027"],
+["Preparar remoto","Fev 2027"],
+["Partir","Abr 2027"]
+];
+
+stepsDiv.innerHTML="";
+list.forEach((s,i)=>{
+let d=document.createElement("div");
+d.innerText=s[0]+" - "+s[1];
+if(steps[i])d.classList.add("done");
+d.onclick=()=>{
+steps[i]=!steps[i];
+localStorage.setItem("malta_steps",JSON.stringify(steps));
+render();
+};
+stepsDiv.appendChild(d);
+});
+}
+
+function renderBudget(){
+const items=[
+["Voo",150],
+["Curso+Casa",2115],
+["Morning",80],
+["Vida",800],
+["Extras",155]
+];
+
+budget.innerHTML="";
+items.forEach(i=>{
+let div=document.createElement("div");
+div.innerHTML=`${i[0]} - €${i[1]} / R$${(i[1]*rate).toFixed(0)}`;
+budget.appendChild(div);
+});
+}
+
+async function init(){
+await getRate();
+window.meta=document.getElementById("meta");
+window.savedEl=document.getElementById("saved");
+window.remaining=document.getElementById("remaining");
+window.bar=document.getElementById("bar");
+window.msg=document.getElementById("msg");
+window.table=document.getElementById("table");
+window.chart=document.getElementById("chart");
+window.stepsDiv=document.getElementById("steps");
+window.budget=document.getElementById("budget");
+
+render();
+}
+
+init();
+
+/*
+// Webhook opcional
+const WEBHOOK_URL = "https://example.com";
+
+function sendToWebhook(data){
+fetch(WEBHOOK_URL,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify(data)
+});
+}
+*/
+</script>
+
+</body>
+</html>
