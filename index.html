@@ -122,11 +122,11 @@
     background: var(--surface);
     border-top: 1px solid var(--border);
     border-radius: 16px 16px 0 0;
-    padding: 0 20px 32px;
+    padding: 0 20px calc(32px + env(safe-area-inset-bottom, 0px));
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 600;
-    max-height: 62vh;
+    max-height: 72vh;
     overflow-y: auto;
   }
   .map-detail-panel.open { transform: translateY(0); }
@@ -424,7 +424,12 @@
 
   <div class="summary-card" style="margin-bottom:10px;">
     <div class="val" style="color:var(--accent); font-size:20px;" id="sum-revenue">0,00€</div>
-    <div class="lbl">Receita bruta (0,90€/pacote)</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+      <div class="lbl">€/pacote</div>
+      <input type="number" id="price-per-pkg" value="0.90" step="0.05" min="0"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--accent);font-size:13px;width:80px;outline:none;font-family:var(--mono);"
+        oninput="updatePricePerPkg()">
+    </div>
   </div>
 
   <div class="summary-card" style="margin-bottom:20px;">
@@ -436,7 +441,7 @@
           oninput="updateFuel()">
       </div>
       <div style="flex:1;">
-        <div class="lbl" style="margin-bottom:4px;">Preço gasóleo (€/L)</div>
+        <div class="lbl" style="margin-bottom:4px;">Preço combustível (€/L)</div>
         <input type="number" id="fuel-price" value="1.65" step="0.01" min="0"
           style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:14px;width:100%;outline:none;"
           oninput="updateFuel()">
@@ -497,7 +502,7 @@ let userLocMarker = null;
 // ─── LOCATION TRACKING STATE ─────────────────────────────────────
 let locationInterval = null;
 
-const PRICE_PER_PKG = 0.90;
+let PRICE_PER_PKG = 0.90;
 
 // ─── INIT ─────────────────────────────────────────────────────────
 function init() {
@@ -508,8 +513,22 @@ function init() {
   }
   const savedFuel = localStorage.getItem('gestentrega_fuel');
   if (savedFuel) document.getElementById('fuel-input').value = savedFuel;
+  const savedPrice = localStorage.getItem('gestentrega_price_per_pkg');
+  if (savedPrice) {
+    PRICE_PER_PKG = parseFloat(savedPrice);
+    document.getElementById('price-per-pkg').value = PRICE_PER_PKG;
+  }
   updateFuel();
   startLocationTracking();
+}
+
+function updatePricePerPkg() {
+  const val = parseFloat(document.getElementById('price-per-pkg').value);
+  if (!isNaN(val) && val >= 0) {
+    PRICE_PER_PKG = val;
+    localStorage.setItem('gestentrega_price_per_pkg', val);
+    renderSummary();
+  }
 }
 
 // ─── SAVE ─────────────────────────────────────────────────────────
@@ -904,10 +923,10 @@ function renderMap() {
 
   if (routeCoords.length > 1) {
     const routeLine = L.polyline(routeCoords, {
-      color: '#00d4aa',
-      weight: 2,
-      opacity: 0.45,
-      dashArray: '6 6',
+      color: '#3b82f6',
+      weight: 3,
+      opacity: 0.75,
+      dashArray: '8 5',
     }).addTo(map);
     pkgMarkers.push(routeLine);
   }
@@ -945,6 +964,7 @@ function showMapDetail(pkg) {
     ${pkg.failReason ? `<div style="font-size:11px;color:var(--warn);margin-bottom:14px;font-style:italic;">Motivo: ${pkg.failReason}</div>` : ''}
     ${pkg.status === 'pending' ? `
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      ${!isNext ? `<button class="btn btn-sm" style="background:#1e3a5f;color:#3b82f6;border:1px solid #3b82f6;" onclick="setAsNext('${pkg.waybill}');closeMapDetail();">→ Próxima entrega</button>` : ''}
       <button class="btn btn-sm" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);" onclick="openMaps(packages.find(p=>p.waybill==='${pkg.waybill}'))">🗺 Google Maps</button>
       <button class="btn btn-sm" style="background:var(--success);color:#0f1117;" onclick="markDelivered('${pkg.waybill}');closeMapDetail();">✓ Entregue</button>
       <button class="btn btn-sm" style="background:var(--danger);color:white;" onclick="openFailModal('${pkg.waybill}');closeMapDetail();">✗ Não entregue</button>
@@ -962,6 +982,24 @@ function showMapDetail(pkg) {
 function closeMapDetail() {
   document.getElementById('map-detail-panel').classList.remove('open');
   document.getElementById('map-overlay').classList.remove('open');
+}
+
+function setAsNext(waybill) {
+  const pending = packages
+    .filter(p => p.status === 'pending')
+    .sort((a, b) => a.order - b.order);
+  const idx = pending.findIndex(p => p.waybill === waybill);
+  if (idx <= 0) return;
+  const reordered = [pending[idx], ...pending.slice(0, idx), ...pending.slice(idx + 1)];
+  const done = packages.filter(p => p.status !== 'pending');
+  let i = 0;
+  reordered.forEach(p => { p.order = i++; });
+  done.forEach(p => { p.order = i++; });
+  packages = [...reordered, ...done];
+  save();
+  renderAll();
+  const pkg = packages.find(p => p.waybill === waybill);
+  showToast(`→ Próxima: ${(pkg.address || '').substring(0, 35)}`);
 }
 
 // ─── RENDER ──────────────────────────────────────────────────────
