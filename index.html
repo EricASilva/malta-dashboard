@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GestEntrega</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <style>
   :root {
     --bg: #0f1117;
@@ -480,7 +480,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN2GqM=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
 // ─── STATE ───────────────────────────────────────────────────────
 let packages = [];
@@ -494,6 +494,9 @@ let map = null;
 let pkgMarkers = [];
 let userLocMarker = null;
 
+// ─── LOCATION TRACKING STATE ─────────────────────────────────────
+let locationInterval = null;
+
 const PRICE_PER_PKG = 0.90;
 
 // ─── INIT ─────────────────────────────────────────────────────────
@@ -506,6 +509,7 @@ function init() {
   const savedFuel = localStorage.getItem('gestentrega_fuel');
   if (savedFuel) document.getElementById('fuel-input').value = savedFuel;
   updateFuel();
+  startLocationTracking();
 }
 
 // ─── SAVE ─────────────────────────────────────────────────────────
@@ -689,48 +693,50 @@ function getPackageMapCoords(pkg) {
 }
 
 // ─── GEOLOCATION ─────────────────────────────────────────────────
+function applyPosition(lat, lng) {
+  currentLat = lat;
+  currentLng = lng;
+  const el = document.getElementById('loc-display');
+  el.textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  el.className = 'location-value active';
+  updateUserLocationOnMap();
+}
+
+// Starts background polling every 3 s — no page refresh, only updates coords + display
+function startLocationTracking() {
+  if (!navigator.geolocation || locationInterval !== null) return;
+
+  const poll = () => {
+    navigator.geolocation.getCurrentPosition(
+      pos => applyPosition(pos.coords.latitude, pos.coords.longitude),
+      null,
+      { enableHighAccuracy: true, timeout: 4000, maximumAge: 2000 }
+    );
+  };
+
+  poll(); // immediate first fix
+  locationInterval = setInterval(poll, 3000);
+}
+
+// Manual force-refresh: recalculates route and shows toast
 function getLocation() {
   const display = document.getElementById('loc-display');
+  if (!navigator.geolocation) { display.textContent = 'GPS não disponível'; return; }
   display.textContent = 'A obter localização...';
   display.className = 'location-value';
-
-  if (!navigator.geolocation) {
-    display.textContent = 'GPS não disponível';
-    return;
-  }
-
   navigator.geolocation.getCurrentPosition(
     pos => {
-      currentLat = pos.coords.latitude;
-      currentLng = pos.coords.longitude;
-      display.textContent = `${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
-      display.className = 'location-value active';
+      applyPosition(pos.coords.latitude, pos.coords.longitude);
       optimizeRoute();
       save();
       renderAll();
-      showToast('Localização obtida — rota recalculada!');
+      showToast('Localização forçada — rota recalculada!');
     },
     () => {
       display.textContent = 'Erro ao obter GPS';
       showToast('Não foi possível obter GPS');
     },
-    { enableHighAccuracy: true, timeout: 10000 }
-  );
-}
-
-function getLocationSilent(cb) {
-  if (!navigator.geolocation) { if (cb) cb(); return; }
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      currentLat = pos.coords.latitude;
-      currentLng = pos.coords.longitude;
-      const el = document.getElementById('loc-display');
-      el.textContent = `${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
-      el.className = 'location-value active';
-      if (cb) cb();
-    },
-    () => { if (cb) cb(); },
-    { enableHighAccuracy: true, timeout: 5000 }
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
 }
 
@@ -740,18 +746,11 @@ function markDelivered(waybill) {
   if (!pkg) return;
   pkg.status = 'delivered';
   pkg.failReason = '';
-
-  getLocationSilent(() => {
-    optimizeRoute();
-    save();
-    renderAll();
-    const next = packages.find(p => p.status === 'pending');
-    if (next) {
-      showToast(`✓ Entregue! Próxima → ${next.address}`);
-    } else {
-      showToast('✓ Rota concluída! Todas entregues 🎉');
-    }
-  });
+  optimizeRoute();
+  save();
+  renderAll();
+  const next = packages.find(p => p.status === 'pending');
+  showToast(next ? `✓ Entregue! Próxima → ${next.address}` : '✓ Rota concluída! Todas entregues 🎉');
 }
 
 // ─── MARK FAILED ────────────────────────────────────────────────
@@ -774,18 +773,11 @@ function confirmFail() {
   pkg.status = 'failed';
   pkg.failReason = document.getElementById('fail-reason').value.trim();
   closeModal();
-
-  getLocationSilent(() => {
-    optimizeRoute();
-    save();
-    renderAll();
-    const next = packages.find(p => p.status === 'pending');
-    if (next) {
-      showToast(`✗ Não entregue. Próxima → ${next.address}`);
-    } else {
-      showToast('✗ Marcado. Sem mais pendentes.');
-    }
-  });
+  optimizeRoute();
+  save();
+  renderAll();
+  const next = packages.find(p => p.status === 'pending');
+  showToast(next ? `✗ Não entregue. Próxima → ${next.address}` : '✗ Marcado. Sem mais pendentes.');
 }
 
 function undoStatus(waybill) {
@@ -811,8 +803,24 @@ function openMaps(pkg) {
   window.open(url, '_blank');
 }
 
+function updateUserLocationOnMap() {
+  if (!map || !currentLat || !currentLng) return;
+  if (userLocMarker) {
+    userLocMarker.setLatLng([currentLat, currentLng]);
+  } else {
+    userLocMarker = L.circleMarker([currentLat, currentLng], {
+      radius: 9, fillColor: '#4fc3f7', color: '#ffffff', weight: 2, fillOpacity: 0.95,
+    }).bindTooltip('Você', { permanent: false, direction: 'top' }).addTo(map);
+  }
+}
+
 // ─── MAP ─────────────────────────────────────────────────────────
 function initMap() {
+  if (typeof L === 'undefined') {
+    document.getElementById('map-container').innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text2);font-size:13px;">Mapa indisponível — sem ligação à internet</div>';
+    return;
+  }
   if (map) {
     map.invalidateSize();
     return;
@@ -824,7 +832,6 @@ function initMap() {
     maxZoom: 19,
   }).addTo(map);
 
-  // Tap on map background closes detail panel
   map.on('click', closeMapDetail);
 }
 
@@ -905,20 +912,7 @@ function renderMap() {
     pkgMarkers.push(routeLine);
   }
 
-  // Update user location marker
-  if (currentLat && currentLng) {
-    if (userLocMarker) {
-      userLocMarker.setLatLng([currentLat, currentLng]);
-    } else {
-      userLocMarker = L.circleMarker([currentLat, currentLng], {
-        radius: 9,
-        fillColor: '#4fc3f7',
-        color: '#ffffff',
-        weight: 2,
-        fillOpacity: 0.95,
-      }).bindTooltip('Você', { permanent: false, direction: 'top' }).addTo(map);
-    }
-  }
+  updateUserLocationOnMap();
 
   if (bounds.length > 0) {
     if (bounds.length === 1) {
@@ -1134,10 +1128,11 @@ function switchTab(name) {
 
   if (name === 'resumo') renderSummary();
   if (name === 'mapa') {
-    setTimeout(() => {
+    // Double rAF ensures the browser has painted the container before Leaflet measures it
+    requestAnimationFrame(() => requestAnimationFrame(() => {
       initMap();
       renderMap();
-    }, 60);
+    }));
   }
 }
 
