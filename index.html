@@ -93,12 +93,35 @@
   .view.active { display: block; }
 
   /* MAP VIEW */
-  #view-mapa { padding: 10px; max-width: 100%; }
+  #view-mapa { padding: 10px; max-width: 100%; position: relative; }
   #map-container {
     height: calc(100vh - 118px);
     border-radius: 8px;
     overflow: hidden;
     position: relative;
+  }
+  .map-locate-btn {
+    position: absolute;
+    bottom: 90px; right: 22px;
+    z-index: 500;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    color: var(--text2);
+    padding: 0;
+  }
+  .map-locate-btn:active { transform: scale(0.93); }
+  .map-locate-btn.active-loc { color: #4fc3f7; border-color: #4fc3f7; }
+  .map-locate-btn.locating { color: var(--accent); border-color: var(--accent); animation: loc-spin 1s linear infinite; }
+  @keyframes loc-spin {
+    0%   { box-shadow: 0 3px 10px rgba(0,0,0,0.5), 0 0 0 0 rgba(0,212,170,0.4); }
+    70%  { box-shadow: 0 3px 10px rgba(0,0,0,0.5), 0 0 0 10px rgba(0,212,170,0); }
+    100% { box-shadow: 0 3px 10px rgba(0,0,0,0.5), 0 0 0 0 rgba(0,212,170,0); }
   }
   .leaflet-tile-pane { filter: brightness(0.82) saturate(0.65); }
   .leaflet-container { background: #0f1117; font-family: var(--sans); }
@@ -379,6 +402,11 @@
 <!-- MAPA VIEW -->
 <div class="view" id="view-mapa">
   <div id="map-container"></div>
+  <button class="map-locate-btn" id="map-locate-btn" onclick="centerOnUser()" title="Minha localização">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z"/>
+    </svg>
+  </button>
 </div>
 
 <!-- IMPORTAR VIEW -->
@@ -820,6 +848,36 @@ function openMaps(pkg) {
     url = `https://www.google.com/maps/dir/?api=1&destination=${query}`;
   }
   window.open(url, '_blank');
+}
+
+function centerOnUser() {
+  const btn = document.getElementById('map-locate-btn');
+  if (!map) return;
+
+  if (currentLat && currentLng) {
+    map.flyTo([currentLat, currentLng], 16, { duration: 1.2 });
+    btn.classList.add('active-loc');
+    setTimeout(() => btn.classList.remove('active-loc'), 2000);
+    return;
+  }
+
+  // Location not yet known — request it
+  if (!navigator.geolocation) { showToast('GPS não disponível'); return; }
+  btn.classList.add('locating');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      applyPosition(pos.coords.latitude, pos.coords.longitude);
+      map.flyTo([currentLat, currentLng], 16, { duration: 1.2 });
+      btn.classList.remove('locating');
+      btn.classList.add('active-loc');
+      setTimeout(() => btn.classList.remove('active-loc'), 2000);
+    },
+    () => {
+      btn.classList.remove('locating');
+      showToast('Não foi possível obter GPS');
+    },
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
 }
 
 function updateUserLocationOnMap() {
