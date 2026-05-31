@@ -833,6 +833,67 @@ function updateUserLocationOnMap() {
   }
 }
 
+// ─── TILE CACHE (IndexedDB) ───────────────────────────────────────
+let _tileDB = null;
+function openTileDB() {
+  if (_tileDB) return Promise.resolve(_tileDB);
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('gestentrega_tiles', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('tiles');
+    req.onsuccess = e => { _tileDB = e.target.result; resolve(_tileDB); };
+    req.onerror = () => reject();
+  });
+}
+function dbGet(key) {
+  return openTileDB().then(db => new Promise(res => {
+    const req = db.transaction('tiles').objectStore('tiles').get(key);
+    req.onsuccess = e => res(e.target.result || null);
+    req.onerror = () => res(null);
+  })).catch(() => null);
+}
+function dbPut(key, val) {
+  openTileDB().then(db => {
+    const tx = db.transaction('tiles', 'readwrite');
+    tx.objectStore('tiles').put(val, key);
+  }).catch(() => {});
+}
+
+const CachedTileLayer = L.TileLayer
+  ? L.TileLayer.extend({
+    createTile(coords, done) {
+      const img = document.createElement('img');
+      const url = this.getTileUrl(coords);
+      const key = `${coords.z}/${coords.x}/${coords.y}`;
+      dbGet(key).then(cached => {
+        if (cached) {
+          img.src = cached;
+          done(null, img);
+        } else {
+          fetch(url)
+            .then(r => r.blob())
+            .then(blob => new Promise(res => {
+              const fr = new FileReader();
+              fr.onloadend = () => res(fr.result);
+              fr.readAsDataURL(blob);
+            }))
+            .then(dataUrl => {
+              dbPut(key, dataUrl);
+              img.onload = () => done(null, img);
+              img.onerror = e => done(e, img);
+              img.src = dataUrl;
+            })
+            .catch(() => {
+              img.onload = () => done(null, img);
+              img.onerror = e => done(e, img);
+              img.src = url;
+            });
+        }
+      });
+      return img;
+    }
+  })
+  : null;
+
 // ─── MAP ─────────────────────────────────────────────────────────
 function initMap() {
   if (typeof L === 'undefined') {
@@ -847,9 +908,11 @@ function initMap() {
 
   map = L.map('map-container', { zoomControl: true }).setView([40.68, -8.18], 11);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-  }).addTo(map);
+  if (CachedTileLayer) {
+    new CachedTileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+  } else {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+  }
 
   map.on('click', closeMapDetail);
 }
@@ -923,9 +986,9 @@ function renderMap() {
 
   if (routeCoords.length > 1) {
     const routeLine = L.polyline(routeCoords, {
-      color: '#3b82f6',
+      color: '#ef4444',
       weight: 3,
-      opacity: 0.75,
+      opacity: 0.80,
       dashArray: '8 5',
     }).addTo(map);
     pkgMarkers.push(routeLine);
@@ -1089,6 +1152,7 @@ function renderList() {
       </div>
       ${pkg.status === 'pending' ? `
       <div class="pkg-actions">
+        ${!isNext ? `<button class="btn btn-sm" style="background:#1e3a5f;color:#3b82f6;border:1px solid #3b82f6;" onclick="setAsNext('${pkg.waybill}')">→ Próxima</button>` : ''}
         <button class="btn btn-sm" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);" onclick="openMaps(packages.find(p=>p.waybill==='${pkg.waybill}'))">🗺 Maps</button>
         <button class="btn btn-sm" style="background:var(--success);color:#0f1117;" onclick="markDelivered('${pkg.waybill}')">✓ Entregue</button>
         <button class="btn btn-sm" style="background:var(--danger);color:white;" onclick="openFailModal('${pkg.waybill}')">✗ Não entregue</button>
