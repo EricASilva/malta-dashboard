@@ -35,13 +35,17 @@
   header {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     position: sticky;
     top: 0;
     z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+  .header-top {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
   .logo {
     font-family: var(--mono);
@@ -67,12 +71,11 @@
   .stat-pill.red { border-color: var(--danger); color: var(--danger); }
   .stat-pill.yellow { border-color: var(--warn); color: var(--warn); }
 
-  /* TABS */
+  /* TABS (inside header) */
   .tabs {
     display: flex;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
     padding: 0 12px;
+    border-top: 1px solid var(--surface2);
   }
   .tab {
     padding: 12px 14px;
@@ -346,6 +349,53 @@
 
   .import-hint { background: var(--surface2); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 12px 16px; margin-bottom: 16px; font-size: 12px; color: var(--text2); line-height: 1.6; }
 
+  /* MAP CACHE CONTROL */
+  .map-cache-ctrl {
+    position: absolute;
+    top: 18px; left: 12px;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 220px;
+  }
+  .map-cache-btn {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 12px; font-weight: 600;
+    color: var(--text2);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+    font-family: var(--sans);
+    white-space: nowrap;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .map-cache-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .map-cache-btn:disabled { opacity: 0.55; cursor: default; }
+  .map-cache-progress {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+  }
+  .map-cache-bar-track {
+    background: var(--surface2);
+    border-radius: 4px; height: 5px; overflow: hidden;
+  }
+  #cache-bar-fill {
+    height: 100%; width: 0%; border-radius: 4px;
+    background: var(--accent);
+    transition: width 0.3s ease;
+  }
+  #cache-bar-label { font-size: 10px; color: var(--text2); font-family: var(--mono); }
+
   @media (max-width: 480px) {
     .header-stats { display: none; }
     .summary-grid { grid-template-columns: 1fr 1fr; }
@@ -356,20 +406,21 @@
 <body>
 
 <header>
-  <div class="logo">GestEntrega <span>Gestão de Rotas</span></div>
-  <div class="header-stats">
-    <div class="stat-pill green" id="hdr-delivered">✓ 0</div>
-    <div class="stat-pill red" id="hdr-failed">✗ 0</div>
-    <div class="stat-pill yellow" id="hdr-pending">⏳ 0</div>
+  <div class="header-top">
+    <div class="logo">GestEntrega <span>Gestão de Rotas</span></div>
+    <div class="header-stats">
+      <div class="stat-pill green" id="hdr-delivered">✓ 0</div>
+      <div class="stat-pill red" id="hdr-failed">✗ 0</div>
+      <div class="stat-pill yellow" id="hdr-pending">⏳ 0</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('rota')">🗺 Rota</div>
+    <div class="tab" onclick="switchTab('mapa')">📍 Mapa</div>
+    <div class="tab" onclick="switchTab('importar')">📋 Importar</div>
+    <div class="tab" onclick="switchTab('resumo')">📊 Resumo</div>
   </div>
 </header>
-
-<div class="tabs">
-  <div class="tab active" onclick="switchTab('rota')">🗺 Rota</div>
-  <div class="tab" onclick="switchTab('mapa')">📍 Mapa</div>
-  <div class="tab" onclick="switchTab('importar')">📋 Importar</div>
-  <div class="tab" onclick="switchTab('resumo')">📊 Resumo</div>
-</div>
 
 <!-- ROTA VIEW -->
 <div class="view active" id="view-rota">
@@ -402,11 +453,23 @@
 <!-- MAPA VIEW -->
 <div class="view" id="view-mapa">
   <div id="map-container"></div>
+  <!-- locate-me button (bottom-right) -->
   <button class="map-locate-btn" id="map-locate-btn" onclick="centerOnUser()" title="Minha localização">
     <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
       <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z"/>
     </svg>
   </button>
+  <!-- tile pre-cache control (top-left) -->
+  <div class="map-cache-ctrl" id="map-cache-ctrl">
+    <button class="map-cache-btn" id="map-cache-btn" onclick="startTileCache()">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      Guardar mapa offline
+    </button>
+    <div class="map-cache-progress" id="map-cache-progress">
+      <div class="map-cache-bar-track"><div id="cache-bar-fill"></div></div>
+      <span id="cache-bar-label">A iniciar...</span>
+    </div>
+  </div>
 </div>
 
 <!-- IMPORTAR VIEW -->
@@ -891,6 +954,107 @@ function updateUserLocationOnMap() {
   }
 }
 
+// ─── WAYBILL HELPERS ─────────────────────────────────────────────
+function fmtWaybill(wb) {
+  if (!wb || wb.length < 4) return wb || '';
+  return `${wb.slice(0, -4)}<strong style="color:var(--accent)">${wb.slice(-4)}</strong>`;
+}
+function copyWaybill(wb) {
+  navigator.clipboard.writeText(wb).then(() => showToast('Waybill copiado!')).catch(() => {
+    const el = document.createElement('textarea');
+    el.value = wb; document.body.appendChild(el); el.select(); document.execCommand('copy'); el.remove();
+    showToast('Waybill copiado!');
+  });
+}
+
+// ─── VIEW ON MAP ─────────────────────────────────────────────────
+function viewOnMap(waybill) {
+  const pkg = packages.find(p => p.waybill === waybill);
+  if (!pkg) return;
+  switchTab('mapa');
+  setTimeout(() => {
+    if (!map) return;
+    const coords = getPackageMapCoords(pkg);
+    if (coords) map.flyTo([coords.lat, coords.lng], 14, { duration: 1.0 });
+    setTimeout(() => showMapDetail(pkg), 900);
+  }, 220);
+}
+
+// ─── TILE PRE-CACHE ───────────────────────────────────────────────
+const VISEU_BOUNDS = { minLat: 40.20, maxLat: 41.10, minLng: -8.60, maxLng: -7.25 };
+const CACHE_ZOOMS  = [10, 11, 12, 13];
+let   cacheRunning = false;
+
+function latLngToTileXY(lat, lng, z) {
+  const n = Math.pow(2, z);
+  const x = Math.floor((lng + 180) / 360 * n);
+  const r = lat * Math.PI / 180;
+  const y = Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n);
+  return { x, y, z };
+}
+
+function getAllDistrictTiles() {
+  const { minLat, maxLat, minLng, maxLng } = VISEU_BOUNDS;
+  const tiles = [];
+  for (const z of CACHE_ZOOMS) {
+    const tl = latLngToTileXY(maxLat, minLng, z);
+    const br = latLngToTileXY(minLat, maxLng, z);
+    for (let x = tl.x; x <= br.x; x++)
+      for (let y = tl.y; y <= br.y; y++)
+        tiles.push({ x, y, z });
+  }
+  return tiles;
+}
+
+async function startTileCache() {
+  if (cacheRunning) return;
+  cacheRunning = true;
+
+  const btn      = document.getElementById('map-cache-btn');
+  const progress = document.getElementById('map-cache-progress');
+  const label    = document.getElementById('cache-bar-label');
+  const fill     = document.getElementById('cache-bar-fill');
+
+  btn.style.display      = 'none';
+  progress.style.display = 'flex';
+
+  const tiles = getAllDistrictTiles();
+  let done = 0, skipped = 0;
+  const BATCH = 4; // polite to OSM servers
+
+  for (let i = 0; i < tiles.length; i += BATCH) {
+    const batch = tiles.slice(i, i + BATCH);
+    await Promise.all(batch.map(async ({ x, y, z }) => {
+      const key    = `${z}/${x}/${y}`;
+      const cached = await dbGet(key);
+      if (cached) { skipped++; done++; return; }
+      const s   = ['a','b','c'][(x + y) % 3];
+      const url = `https://${s}.tile.openstreetmap.org/${z}/${x}/${y}.png`;
+      try {
+        const blob   = await fetch(url).then(r => r.blob());
+        const dataUrl = await new Promise(res => { const fr = new FileReader(); fr.onloadend = () => res(fr.result); fr.readAsDataURL(blob); });
+        dbPut(key, dataUrl);
+      } catch { /* skip on error */ }
+      done++;
+    }));
+    const pct = Math.round(done / tiles.length * 100);
+    fill.style.width = pct + '%';
+    label.textContent = `${done}/${tiles.length} · ${pct}%`;
+    await new Promise(r => setTimeout(r, 120)); // rate-limit
+  }
+
+  cacheRunning = false;
+  const saved = done - skipped;
+  fill.style.background = 'var(--success)';
+  label.textContent = `✓ ${saved} novos · ${skipped} já em cache`;
+  setTimeout(() => {
+    progress.style.display = 'none';
+    btn.textContent = '✓ Mapa guardado';
+    btn.style.display = 'flex';
+    btn.disabled = true;
+  }, 4000);
+}
+
 // ─── TILE CACHE (IndexedDB) ───────────────────────────────────────
 let _tileDB = null;
 function openTileDB() {
@@ -1073,7 +1237,7 @@ function showMapDetail(pkg) {
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px;">
       <div>
         <div style="font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:4px;">#${pkg.order + 1} · ${pkg.zone}${isNext ? ' · <span style="color:var(--accent)">PRÓXIMA</span>' : ''}</div>
-        <div style="font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:6px;">${pkg.waybill}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:6px;display:flex;align-items:center;gap:6px;">${fmtWaybill(pkg.waybill)}<button onclick="copyWaybill('${pkg.waybill}')" style="background:none;border:none;padding:0;cursor:pointer;color:var(--text2);line-height:1;" title="Copiar"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></div>
         <div style="font-size:15px;font-weight:600;line-height:1.4;margin-bottom:4px;">${pkg.address}</div>
         <div style="font-size:12px;color:var(--text2);">${pkg.postalCode} ${pkg.city}</div>
       </div>
@@ -1149,8 +1313,11 @@ function renderNextCard() {
   if (!next) { wrap.innerHTML = ''; return; }
   wrap.innerHTML = `
     <div class="next-card">
-      <div class="waybill">${next.waybill}</div>
-      <div class="address">${next.address}<br><span style="font-size:13px;color:var(--text2);">${next.postalCode} ${next.city}</span></div>
+      <div class="waybill" style="display:flex;align-items:center;gap:6px;">${fmtWaybill(next.waybill)}<button onclick="copyWaybill('${next.waybill}')" style="background:none;border:none;padding:0;cursor:pointer;color:var(--accent);opacity:0.7;" title="Copiar"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></div>
+      <div class="address" style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div>${next.address}<br><span style="font-size:13px;color:var(--text2);">${next.postalCode} ${next.city}</span></div>
+        <div style="font-family:var(--mono);font-size:30px;font-weight:700;color:var(--accent);opacity:0.55;line-height:1;flex-shrink:0;margin-top:2px;">${next.waybill.slice(-4)}</div>
+      </div>
       <div class="actions">
         <button class="btn btn-primary btn-sm" onclick="openMaps(packages.find(p=>p.waybill==='${next.waybill}'))">🗺 Google Maps</button>
         <button class="btn btn-sm" style="background:var(--success);color:#0f1117;" onclick="markDelivered('${next.waybill}')">✓ Entregue</button>
@@ -1201,7 +1368,12 @@ function renderList() {
       <div class="pkg-header">
         <div class="pkg-left">
           <div class="pkg-num">#${pkg.order + 1} · ${pkg.zone}</div>
-          <div class="pkg-waybill">${pkg.waybill}</div>
+          <div class="pkg-waybill" style="display:flex;align-items:center;gap:6px;">
+            <span>${fmtWaybill(pkg.waybill)}</span>
+            <button onclick="copyWaybill('${pkg.waybill}')" style="background:none;border:none;padding:2px;cursor:pointer;color:var(--text2);line-height:1;flex-shrink:0;" title="Copiar waybill">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+            </button>
+          </div>
           <div class="pkg-addr">${pkg.address}</div>
           <div class="pkg-zone">${pkg.postalCode} ${pkg.city}</div>
           ${pkg.failReason ? `<div class="pkg-fail-reason">Motivo: ${pkg.failReason}</div>` : ''}
@@ -1211,11 +1383,13 @@ function renderList() {
       ${pkg.status === 'pending' ? `
       <div class="pkg-actions">
         ${!isNext ? `<button class="btn btn-sm" style="background:#1e3a5f;color:#3b82f6;border:1px solid #3b82f6;" onclick="setAsNext('${pkg.waybill}')">→ Próxima</button>` : ''}
+        <button class="btn btn-sm" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);" onclick="viewOnMap('${pkg.waybill}')">📍 Ver mapa</button>
         <button class="btn btn-sm" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);" onclick="openMaps(packages.find(p=>p.waybill==='${pkg.waybill}'))">🗺 Maps</button>
         <button class="btn btn-sm" style="background:var(--success);color:#0f1117;" onclick="markDelivered('${pkg.waybill}')">✓ Entregue</button>
         <button class="btn btn-sm" style="background:var(--danger);color:white;" onclick="openFailModal('${pkg.waybill}')">✗ Não entregue</button>
       </div>` : `
       <div class="pkg-actions">
+        <button class="btn btn-sm" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);" onclick="viewOnMap('${pkg.waybill}')">📍 Ver mapa</button>
         <button class="btn btn-outline btn-sm" onclick="undoStatus('${pkg.waybill}')">↩ Reverter</button>
       </div>`}
     </div>`;
