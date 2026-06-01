@@ -270,7 +270,7 @@
   .pkg-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
   .pkg-left { flex: 1; min-width: 0; }
   .pkg-num { font-family: var(--mono); font-size: 10px; color: var(--text2); margin-bottom: 3px; }
-  .pkg-waybill { font-family: var(--mono); font-size: 13px; color: var(--accent); margin-bottom: 5px; word-break: break-all; user-select: all; }
+  .pkg-waybill { font-family: var(--mono); font-size: 16px; color: var(--accent); margin-bottom: 5px; word-break: break-all; user-select: all; }
   .pkg-addr { font-size: 13px; color: var(--text); line-height: 1.4; }
   .pkg-zone { font-size: 11px; color: var(--text2); margin-top: 3px; }
   .pkg-status { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
@@ -400,6 +400,38 @@
     .header-stats { display: none; }
     .summary-grid { grid-template-columns: 1fr 1fr; }
     .tab { padding: 12px 10px; font-size: 11px; }
+  }
+  /* ── User location marker ───────────────────────────────────────── */
+  .user-loc-wrap {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-origin: center center;
+    transition: transform 0.3s ease-out;
+  }
+  .user-loc-cone {
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 11px solid rgba(79, 195, 247, 0.85);
+    display: none;
+    filter: drop-shadow(0 0 2px rgba(79,195,247,0.6));
+  }
+  .user-loc-dot {
+    width: 18px;
+    height: 18px;
+    background: #4fc3f7;
+    border: 2.5px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(79,195,247,0.3), 0 2px 6px rgba(0,0,0,0.25);
   }
 </style>
 </head>
@@ -589,6 +621,7 @@ let failTarget = null;
 let map = null;
 let pkgMarkers = [];
 let userLocMarker = null;
+let currentHeading = null;
 
 // ─── LOCATION TRACKING STATE ─────────────────────────────────────
 let locationInterval = null;
@@ -611,6 +644,7 @@ function init() {
   }
   updateFuel();
   startLocationTracking();
+  startCompass();
 }
 
 function updatePricePerPkg() {
@@ -917,6 +951,18 @@ function centerOnUser() {
   const btn = document.getElementById('map-locate-btn');
   if (!map) return;
 
+  // iOS 13+ compass requires permission from a user gesture
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function' &&
+      !window._compassPermissionGranted) {
+    DeviceOrientationEvent.requestPermission().then(state => {
+      if (state === 'granted') {
+        window._compassPermissionGranted = true;
+        startCompass();
+      }
+    }).catch(() => {});
+  }
+
   if (currentLat && currentLng) {
     map.flyTo([currentLat, currentLng], 16, { duration: 1.2 });
     btn.classList.add('active-loc');
@@ -943,15 +989,65 @@ function centerOnUser() {
   );
 }
 
+function createUserLocIcon() {
+  return L.divIcon({
+    className: '',
+    html: '<div class="user-loc-wrap"><div class="user-loc-cone"></div><div class="user-loc-dot"></div></div>',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    tooltipAnchor: [0, -20],
+  });
+}
+
+function applyHeadingToMarker() {
+  if (!userLocMarker) return;
+  const el = userLocMarker.getElement();
+  if (!el) return;
+  const wrap = el.querySelector('.user-loc-wrap');
+  const cone = el.querySelector('.user-loc-cone');
+  if (!wrap) return;
+  if (currentHeading !== null) {
+    wrap.style.transform = `rotate(${currentHeading}deg)`;
+    if (cone) cone.style.display = 'block';
+  } else {
+    wrap.style.transform = '';
+    if (cone) cone.style.display = 'none';
+  }
+}
+
+function startCompass() {
+  if (!window.DeviceOrientationEvent || window._compassStarted) return;
+  window._compassStarted = true;
+  let lastHeading = null;
+  const handler = (e) => {
+    let heading = null;
+    if (e.webkitCompassHeading != null) {
+      heading = e.webkitCompassHeading; // iOS: 0–360, clockwise from north
+    } else if (e.alpha != null) {
+      heading = (360 - e.alpha) % 360; // Android: convert to clockwise-from-north
+    }
+    if (heading === null) return;
+    if (lastHeading === null || Math.abs(heading - lastHeading) > 2) {
+      lastHeading = heading;
+      currentHeading = heading;
+      applyHeadingToMarker();
+    }
+  };
+  window._orientationHandler = handler;
+  window.addEventListener('deviceorientation', handler, true);
+}
+
 function updateUserLocationOnMap() {
   if (!map || !currentLat || !currentLng) return;
   if (userLocMarker) {
     userLocMarker.setLatLng([currentLat, currentLng]);
   } else {
-    userLocMarker = L.circleMarker([currentLat, currentLng], {
-      radius: 9, fillColor: '#4fc3f7', color: '#ffffff', weight: 2, fillOpacity: 0.95,
+    userLocMarker = L.marker([currentLat, currentLng], {
+      icon: createUserLocIcon(),
+      zIndexOffset: 1000,
     }).bindTooltip('Você', { permanent: false, direction: 'top' }).addTo(map);
   }
+  applyHeadingToMarker();
 }
 
 // ─── WAYBILL HELPERS ─────────────────────────────────────────────
