@@ -270,7 +270,7 @@
   .pkg-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
   .pkg-left { flex: 1; min-width: 0; }
   .pkg-num { font-family: var(--mono); font-size: 10px; color: var(--text2); margin-bottom: 3px; }
-  .pkg-waybill { font-family: var(--mono); font-size: 11px; color: var(--accent); margin-bottom: 5px; word-break: break-all; user-select: all; }
+  .pkg-waybill { font-family: var(--mono); font-size: 13px; color: var(--accent); margin-bottom: 5px; word-break: break-all; user-select: all; }
   .pkg-addr { font-size: 13px; color: var(--text); line-height: 1.4; }
   .pkg-zone { font-size: 11px; color: var(--text2); margin-top: 3px; }
   .pkg-status { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
@@ -1378,7 +1378,10 @@ function renderList() {
           <div class="pkg-zone">${pkg.postalCode} ${pkg.city}</div>
           ${pkg.failReason ? `<div class="pkg-fail-reason">Motivo: ${pkg.failReason}</div>` : ''}
         </div>
-        <div class="pkg-status ${statusClass}">${statusLabel}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+          <div style="font-family:var(--mono);font-size:26px;font-weight:700;color:var(--accent);opacity:0.5;line-height:1;">${pkg.waybill.slice(-4)}</div>
+          <div class="pkg-status ${statusClass}">${statusLabel}</div>
+        </div>
       </div>
       ${pkg.status === 'pending' ? `
       <div class="pkg-actions">
