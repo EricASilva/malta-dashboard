@@ -1128,7 +1128,8 @@ function initMap() {
     return;
   }
 
-  map = L.map('map-container', { zoomControl: true }).setView([40.68, -8.18], 11);
+  map = L.map('map-container', { zoomControl: false }).setView([40.68, -8.18], 11);
+  L.control.zoom({ position: 'topright' }).addTo(map);
 
   if (CachedTileLayer) {
     new CachedTileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
